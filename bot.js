@@ -4,7 +4,7 @@ const { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs } = re
 
 const BOT_TOKEN = '8906517834:AAE1BfNIbww2WcNKd6Ikv_J_62lNPoE8r5M';
 const ADMIN_TELEGRAM_ID = 6086216034; // الآدي الخاص بك كإدمن
-const WEB_APP_URL = 'ضع_رابط_الموقع_المستضاف_هنا'; // ضع رابط استضافتك هنا بعد رفعه على GitHub
+const WEB_APP_URL = 'https://ahmedeng199d-debug.github.io/NQTRT-BOT/'; // رابط استضافتك المحدث
 
 const bot = new Telegraf(BOT_TOKEN);
 
@@ -65,6 +65,33 @@ bot.start(async (ctx) => {
     );
 });
 
+// أمر إرسال رسالة أو إشعار لكل المشتركين المقبولين (Broadcast)
+bot.command('send', async (ctx) => {
+    if (ctx.from.id !== ADMIN_TELEGRAM_ID) {
+        return ctx.reply('❌ هذا الأمر مخصص للإدمن فقط.');
+    }
+
+    const textMessage = ctx.message.text.replace('/send', '').trim();
+    if (!textMessage) {
+        return ctx.reply('⚠️ يرجى كتابة الرسالة بعد الأمر. مثال:\n`/send 📢 تنبيه هام بخصوص افتتاح السوق`', { parse_mode: 'Markdown' });
+    }
+
+    const usersSnap = await getDocs(collection(db, "users"));
+    let count = 0;
+
+    usersSnap.forEach(async (docSnap) => {
+        const data = docSnap.data();
+        if (data.status === 'approved') {
+            try {
+                await bot.telegram.sendMessage(docSnap.id, `📢 **تنبيه من الإدارة:**\n\n${textMessage}`, { parse_mode: 'Markdown' });
+                count++;
+            } catch (e) {}
+        }
+    });
+
+    ctx.reply(`✅ تمت إرسال الرسالة بنجاح إلى المشتركين المقبولين.`);
+});
+
 bot.action(/approve_(.+)/, async (ctx) => {
     const userId = ctx.match[1];
     const userRef = doc(db, "users", userId);
@@ -94,4 +121,4 @@ bot.action(/reject_(.+)/, async (ctx) => {
 });
 
 bot.launch();
-console.log('🤖 Bot is running...');
+console.log('🤖 Bot is running and fully connected to NQTRT WebApp...');
