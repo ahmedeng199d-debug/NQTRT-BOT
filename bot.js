@@ -14,14 +14,9 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
-// قراءة التوكن مباشرة من متغيرات البيئة حصراً لمنع أي كاش أو تضارب
-const botToken = process.env.BOT_TOKEN;
-if (!botToken) {
-  console.error("Error: BOT_TOKEN is missing in environment variables!");
-  process.exit(1);
-}
+// التوكن الجديد الصحيح مكتوب هنا مباشرة لمنع أي خطأ
+const bot = new Telegraf('8906517834:AAEiMlJMZ-ceHsiBrdxiw9-YS18H5XgpSc');
 
-const bot = new Telegraf(botToken);
 const adminIds = [6086216034, 164465121, 5876814827]; 
 
 const disclaimerText = `
@@ -114,5 +109,5 @@ bot.action(/reject_(.+)/, async (ctx) => {
 });
 
 bot.launch().then(() => {
-  console.log("Bot is successfully running via process.env.BOT_TOKEN!");
+  console.log("Bot is successfully running!");
 });
