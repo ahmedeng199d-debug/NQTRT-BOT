@@ -2,6 +2,7 @@ const { Telegraf, Markup } = require('telegraf');
 const { initializeApp } = require('firebase/app');
 const { getFirestore, doc, getDoc, setDoc, updateDoc } = require('firebase/firestore');
 
+// إعدادات Firebase الخاصة بك
 const firebaseConfig = {
   apiKey: "ضع_مفتاح_الـ_api_هنا",
   authDomain: "nqtrt-trading.firebaseapp.com",
@@ -14,10 +15,13 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
-const bot = new Telegraf('7971714545:AAHSg0M-m4y1v6g8R1Z1s3b0q1X6v8c7m9K');
+// توكن البوت الصحيح الجديد
+const bot = new Telegraf('8906517834:AAE1BfNIBww2WcNKd6Ikv_J_62lNPoE8r5M');
 
+// الـ IDs الخاصة بالأدمنز الثلاثة
 const adminIds = [6086216034, 164465121, 5876814827]; 
 
+// رسالة إخلاء المسؤولية الموحدة
 const disclaimerText = `
 ⚜️ **NQTRT Terminal** ⚜️
 
@@ -32,8 +36,9 @@ bot.start(async (ctx) => {
     const userId = ctx.from.id;
     const username = ctx.from.username || ctx.from.first_name || "مستخدم";
 
+    // إذا كان المستخدم أحد الأدمنز، نرحب به فوراً بدون أي شروط أو انتظار
     if (adminIds.includes(userId)) {
-      return ctx.reply(`👑 أهلاً بك يا مشرف المنصة (${username})!\n\nحسابك مسجل كأدمن رئيسي.`);
+      return ctx.reply(`👑 أهلاً بك يا مشرف المنصة (${username})!\n\nحسابك مسجل كأدمن رئيسي وجاهز لإدارة الطلبات.`);
     }
 
     const userRef = doc(db, 'users', userId.toString());
@@ -49,6 +54,7 @@ bot.start(async (ctx) => {
 
       await ctx.reply(disclaimerText + "\n\n⌛ حسابك قيد المراجعة من قِبل الإدارة.", { parse_mode: 'Markdown' });
 
+      // إرسال الإشعار لجميع الأدمنز مع أزرار الموافقة والرفض
       for (const adminId of adminIds) {
         try {
           await bot.telegram.sendMessage(
@@ -112,5 +118,5 @@ bot.action(/reject_(.+)/, async (ctx) => {
 });
 
 bot.launch().then(() => {
-  console.log("Bot is successfully running!");
+  console.log("Bot is successfully running with correct token!");
 });
