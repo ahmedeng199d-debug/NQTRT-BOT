@@ -34,14 +34,19 @@ const disclaimerText = `
 
 bot.start(async (ctx) => {
   const userId = ctx.from.id;
-  const username = ctx.from.username || ctx.from.first_name;
+  const username = ctx.from.username || ctx.from.first_name || "مستخدم";
+
+  // 1. التحقق المباشر: إذا كان المستخدم أدمن، ندخله فوراً بدون انتظار!
+  if (adminIds.includes(userId)) {
+    return ctx.reply(`👑 أهلاً بك يا مشرف المنصة (${username})!\n\nحسابك مسجل كـ **أدمن أساسي**. يمكنك إدارة الطلبات واستلام الإشعارات مباشرة.`);
+  }
 
   try {
     const userRef = doc(db, 'users', userId.toString());
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // إذا كان مستخدماً جديداً، نسجله بحالة قيد الانتظار (pending)
+      // مستخدم جديد تماماً
       await setDoc(userRef, {
         userId: userId,
         username: username,
@@ -49,15 +54,15 @@ bot.start(async (ctx) => {
         joinedAt: new Date().toISOString()
       });
 
-      // إرسال رسالة للمستخدم
+      // إرسال رسالة إخلاء المسؤولية وقيد الانتظار للمستخدم
       await ctx.reply(disclaimerText + "\n\n⌛ حسابك قيد المراجعة من قِبل الإدارة. يرجى الانتظار لحين الموافقة.", { parse_mode: 'Markdown' });
 
-      // إرسال إشعار فوري لجميع الأدمنز مع أزرار الموافقة والرفض
+      // إرسال الإشعار لجميع الأدمنز في الخاص لديهم
       for (const adminId of adminIds) {
         try {
           await bot.telegram.sendMessage(
             adminId,
-            `🔔 **طلب انضمام جديد!**\n\n👤 المستخدم: @${username}\n🆔 الـ ID: \`${userId}\``,
+            `🔔 **طلب انضمام جديد للمنصة!**\n\n👤 المستخدم: @${username}\n🆔 الـ ID: \`${userId}\``,
             {
               parse_mode: 'Markdown',
               ...Markup.inlineKeyboard([
@@ -69,7 +74,7 @@ bot.start(async (ctx) => {
             }
           );
         } catch (err) {
-          console.log(`Could not send notification to admin ${adminId}`);
+          console.log(`Could not send notification to admin ${adminId}:`, err.message);
         }
       }
 
@@ -87,7 +92,7 @@ bot.start(async (ctx) => {
   }
 });
 
-// التعامل مع أزرار الموافقة والرفض التي يضغط عليها الأدمن
+// التعامل مع أزرار الموافقة
 bot.action(/approve_(.+)/, async (ctx) => {
   const targetUserId = ctx.match[1];
   const adminName = ctx.from.first_name;
@@ -96,10 +101,8 @@ bot.action(/approve_(.+)/, async (ctx) => {
     const userRef = doc(db, 'users', targetUserId);
     await updateDoc(userRef, { status: 'approved' });
 
-    // تعديل رسالة الأدمن لتأكيد القبول
     await ctx.editMessageText(`✅ **تمت الموافقة على الطلب بنجاح** بواسطة ${adminName}.`, { parse_mode: 'Markdown' });
 
-    // إبلاغ المستخدم بأنه تمت الموافقة على حسابه
     await bot.telegram.sendMessage(
       targetUserId,
       "🎉 **تم قبول طلبك بنجاح!**\n\nأصبحت الآن قادراً على استخدام المنصة بالكامل.",
@@ -111,6 +114,7 @@ bot.action(/approve_(.+)/, async (ctx) => {
   }
 });
 
+// التعامل مع أزرار الرفض
 bot.action(/reject_(.+)/, async (ctx) => {
   const targetUserId = ctx.match[1];
   const adminName = ctx.from.first_name;
@@ -132,4 +136,4 @@ bot.action(/reject_(.+)/, async (ctx) => {
 });
 
 bot.launch();
-console.log("🤖 Bot is running and fully connected with multi-admin approval system...");
+console.log("🤖 Bot is running with Admin bypass & interactive approvals...");
