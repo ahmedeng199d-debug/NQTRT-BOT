@@ -2,7 +2,6 @@ const { Telegraf, Markup } = require('telegraf');
 const { initializeApp } = require('firebase/app');
 const { getFirestore, doc, getDoc, setDoc, updateDoc } = require('firebase/firestore');
 
-// إعدادات Firebase الخاصة بك
 const firebaseConfig = {
   apiKey: "ضع_مفتاح_الـ_api_هنا",
   authDomain: "nqtrt-trading.firebaseapp.com",
@@ -15,13 +14,16 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
-// التوكن الجديد الصحيح والنظيف
-const bot = new Telegraf('8906517834:AAEiMlJMZ-ceHsiBrdxiw9-YS18H5XgpSc');
+// قراءة التوكن مباشرة من متغيرات البيئة حصراً لمنع أي كاش أو تضارب
+const botToken = process.env.BOT_TOKEN;
+if (!botToken) {
+  console.error("Error: BOT_TOKEN is missing in environment variables!");
+  process.exit(1);
+}
 
-// الـ IDs الخاصة بالأدمنز الثلاثة
+const bot = new Telegraf(botToken);
 const adminIds = [6086216034, 164465121, 5876814827]; 
 
-// رسالة إخلاء المسؤولية الموحدة
 const disclaimerText = `
 ⚜️ **NQTRT Terminal** ⚜️
 
@@ -36,7 +38,6 @@ bot.start(async (ctx) => {
     const userId = ctx.from.id;
     const username = ctx.from.username || ctx.from.first_name || "مستخدم";
 
-    // إذا كان المستخدم أحد الأدمنز، نرحب به فوراً بدون أي شروط
     if (adminIds.includes(userId)) {
       return ctx.reply(`👑 أهلاً بك يا مشرف المنصة (${username})!\n\nحسابك مسجل كأدمن رئيسي وجاهز لإدارة الطلبات.`);
     }
@@ -54,7 +55,6 @@ bot.start(async (ctx) => {
 
       await ctx.reply(disclaimerText + "\n\n⌛ حسابك قيد المراجعة من قِبل الإدارة.", { parse_mode: 'Markdown' });
 
-      // إرسال الإشعار لجميع الأدمنز مع أزرار الموافقة والرفض
       for (const adminId of adminIds) {
         try {
           await bot.telegram.sendMessage(
@@ -91,10 +91,8 @@ bot.action(/approve_(.+)/, async (ctx) => {
   try {
     const targetUserId = ctx.match[1];
     const adminName = ctx.from.first_name;
-
     const userRef = doc(db, 'users', targetUserId);
     await updateDoc(userRef, { status: 'approved' });
-
     await ctx.editMessageText(`✅ تمت الموافقة بواسطة ${adminName}.`, { parse_mode: 'Markdown' });
     await bot.telegram.sendMessage(targetUserId, "🎉 تم قبول طلبك بنجاح وأصبحت قادراً على استخدام المنصة.");
   } catch (error) {
@@ -106,10 +104,8 @@ bot.action(/reject_(.+)/, async (ctx) => {
   try {
     const targetUserId = ctx.match[1];
     const adminName = ctx.from.first_name;
-
     const userRef = doc(db, 'users', targetUserId);
     await updateDoc(userRef, { status: 'rejected' });
-
     await ctx.editMessageText(`❌ تم رفض الطلب بواسطة ${adminName}.`, { parse_mode: 'Markdown' });
     await bot.telegram.sendMessage(targetUserId, "عذراً، تم رفض طلب انضمامك في الوقت الحالي.");
   } catch (error) {
@@ -118,5 +114,5 @@ bot.action(/reject_(.+)/, async (ctx) => {
 });
 
 bot.launch().then(() => {
-  console.log("Bot is successfully running with new token!");
+  console.log("Bot is successfully running via process.env.BOT_TOKEN!");
 });
